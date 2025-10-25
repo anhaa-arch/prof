@@ -1,0 +1,451 @@
+# ====================================
+# 🧪 СИСТЕМ ШАЛГАХ GraphQL QUERIES
+# ====================================
+
+# ====================================
+# 1️⃣ PROFESSOR эрхээр нэвтрэх
+# ====================================
+mutation LoginProfessor {
+  login(input: {
+    email: "dorj.professor@university.edu"
+    password: "Prof123!"
+  }) {
+    accessToken
+    refreshToken
+    user {
+      id
+      email
+      fullName
+      role
+      department {
+        id
+        name
+        code
+      }
+    }
+  }
+}
+
+# Token-г HTTP Headers дээр оруулна:
+# {
+#   "Authorization": "Bearer YOUR_ACCESS_TOKEN_HERE"
+# }
+
+# ====================================
+# 2️⃣ Миний мэдээлэл авах
+# ====================================
+query GetMe {
+  me {
+    id
+    email
+    fullName
+    role
+    isActive
+    department {
+      id
+      name
+      code
+    }
+    createdAt
+    lastLogin
+  }
+}
+
+# ====================================
+# 3️⃣ Миний бүтээлүүд
+# ====================================
+query GetMyWorks {
+  myWorks(page: 1, size: 10) {
+    data {
+      id
+      title
+      abstract
+      type
+      journalName
+      journalIndex
+      year
+      status
+      creditBase
+      createdAt
+      authors {
+        id
+        authorName
+        contributionPercent
+        order
+        isCorresponding
+      }
+    }
+    total
+    page
+    size
+    totalPages
+  }
+}
+
+# ====================================
+# 4️⃣ Миний кредитүүд
+# ====================================
+query GetMyCredits {
+  myCredits(page: 1, size: 50) {
+    data {
+      id
+      creditValue
+      calculatedAt
+      calculationDetail
+      work {
+        id
+        title
+        journalIndex
+        year
+      }
+    }
+    total
+    totalPages
+  }
+}
+
+# ====================================
+# 5️⃣ Миний нийт кредит (2025)
+# ====================================
+query GetMyTotalCredits2025 {
+  myTotalCredits(year: 2025)
+}
+
+# ====================================
+# 6️⃣ Миний тайлан (2025)
+# ====================================
+query GetMyReport2025 {
+  myCreditsBreakdown(year: 2025) {
+    totalCredits
+    byType
+    byIndex
+    byYear
+    credits {
+      id
+      creditValue
+      calculatedAt
+      work {
+        id
+        title
+        year
+        journalIndex
+      }
+    }
+  }
+}
+
+# ====================================
+# 7️⃣ Хайлт хийх
+# ====================================
+query SearchMachineLearning {
+  searchWorks(
+    input: { query: "machine learning" }
+    page: 1
+    size: 10
+  ) {
+    data {
+      id
+      title
+      abstract
+      type
+      journalName
+      journalIndex
+      year
+      status
+      authors {
+        authorName
+        contributionPercent
+      }
+    }
+    total
+    totalPages
+  }
+}
+
+# ====================================
+# ESH/ADMIN ЭРХИЙН QUERIES
+# ====================================
+
+# ====================================
+# 8️⃣ ESH эрхээр нэвтрэх
+# ====================================
+mutation LoginESH {
+  login(input: {
+    email: "esh@university.edu"
+    password: "Esh123!"
+  }) {
+    accessToken
+    user {
+      id
+      fullName
+      role
+    }
+  }
+}
+
+# ====================================
+# 9️⃣ Хүлээгдэж буй баталгаажуулалт
+# ====================================
+query GetPendingVerifications {
+  pendingVerifications(page: 1, size: 20) {
+    data {
+      id
+      title
+      type
+      journalName
+      journalIndex
+      year
+      status
+      createdAt
+      creator {
+        id
+        fullName
+        email
+        department {
+          name
+        }
+      }
+      authors {
+        authorName
+        contributionPercent
+        isCorresponding
+      }
+    }
+    total
+    totalPages
+  }
+}
+
+# ====================================
+# 1️⃣0️⃣ ADMIN эрхээр нэвтрэх
+# ====================================
+mutation LoginAdmin {
+  login(input: {
+    email: "admin@university.edu"
+    password: "Admin123!"
+  }) {
+    accessToken
+    user {
+      id
+      fullName
+      role
+    }
+  }
+}
+
+# ====================================
+# 1️⃣1️⃣ Бүх хэрэглэгчид (ADMIN)
+# ====================================
+query GetAllUsers {
+  users(page: 1, size: 50) {
+    data {
+      id
+      email
+      fullName
+      role
+      isActive
+      department {
+        name
+      }
+      createdAt
+      lastLogin
+    }
+    total
+  }
+}
+
+# ====================================
+# 1️⃣2️⃣ Бүх тэнхимүүд
+# ====================================
+query GetAllDepartments {
+  departments {
+    id
+    name
+    code
+    head {
+      fullName
+    }
+    createdAt
+  }
+}
+
+# ====================================
+# ШИНЭ БҮТЭЭЛ ҮҮСГЭХ (PROFESSOR)
+# ====================================
+
+# ====================================
+# 1️⃣3️⃣ Шинэ бүтээл үүсгэх
+# ====================================
+mutation CreateNewWork {
+  createWork(input: {
+    title: "Test Work - Neural Networks in Healthcare"
+    abstract: "This paper discusses the application of neural networks in modern healthcare systems."
+    language: ENGLISH
+    type: ARTICLE
+    journalName: "International Journal of Medical AI"
+    journalIndex: SCI
+    doi: "10.1234/test.2025.001"
+    issn: "1234-5678"
+    volume: "15"
+    issue: "3"
+    pages: "45-67"
+    year: 2025
+    authors: [{
+      authorName: "Доржийн Болд"
+      contributionPercent: 60
+      order: 1
+      isCorresponding: true
+    }, {
+      authorName: "Болдын Батаа"
+      contributionPercent: 40
+      order: 2
+      isCorresponding: false
+    }]
+  }) {
+    id
+    title
+    status
+    authors {
+      authorName
+      contributionPercent
+    }
+  }
+}
+
+# ====================================
+# 1️⃣4️⃣ Бүтээлийг баталгаажуулалт руу илгээх
+# ====================================
+mutation SubmitWorkForVerification {
+  submitWorkForVerification(id: "WORK_ID_FROM_CREATE") {
+    id
+    title
+    status
+  }
+}
+
+# ====================================
+# 1️⃣5️⃣ Бүтээл батлах (ESH/ADMIN)
+# ====================================
+mutation ApproveWork {
+  approveWork(input: {
+    workId: "WORK_ID_TO_APPROVE"
+    note: "Бүх баримт бичиг хангалттай. Батлагдлаа."
+  }) {
+    id
+    title
+    status
+  }
+}
+
+# ====================================
+# 1️⃣6️⃣ Бүтээл татгалзах (ESH/ADMIN)
+# ====================================
+mutation RejectWork {
+  rejectWork(input: {
+    workId: "WORK_ID_TO_REJECT"
+    note: "Сэтгүүлийн мэдээлэл дутуу байна. Дахин оруулна уу."
+  }) {
+    id
+    title
+    status
+  }
+}
+
+# ====================================
+# 1️⃣7️⃣ Кредит дахин тооцоолох (ADMIN)
+# ====================================
+mutation RecalculateCredits {
+  calculateCreditsForWork(workId: "WORK_ID_TO_CALCULATE") {
+    id
+    title
+    credits {
+      userId
+      creditValue
+      calculationDetail
+    }
+  }
+}
+
+# ====================================
+# 1️⃣8️⃣ Жилийн тайлан үүсгэх
+# ====================================
+mutation GenerateAnnualReport {
+  generateMyAnnualReport(year: 2025) {
+    id
+    year
+    totalCredits
+    researchCredits
+    teachingCredits
+    serviceCredits
+    generatedAt
+  }
+}
+
+# ====================================
+# 1️⃣9️⃣ Жилийн тайлан авах
+# ====================================
+query GetMyAnnualReport {
+  myAnnualReport(year: 2025) {
+    id
+    year
+    totalCredits
+    researchCredits
+    teachingCredits
+    serviceCredits
+    generatedAt
+    reportData
+  }
+}
+
+# ====================================
+# 2️⃣0️⃣ Тодорхой бүтээл авах
+# ====================================
+query GetSpecificWork {
+  work(id: "WORK_ID_HERE") {
+    id
+    title
+    abstract
+    language
+    type
+    journalName
+    journalIndex
+    doi
+    issn
+    volume
+    issue
+    pages
+    year
+    publishedDate
+    status
+    creditBase
+    createdAt
+    updatedAt
+    creator {
+      id
+      fullName
+      email
+      department {
+        name
+      }
+    }
+    authors {
+      id
+      authorName
+      contributionPercent
+      order
+      isCorresponding
+      user {
+        id
+        fullName
+      }
+    }
+    files {
+      id
+      fileName
+      contentType
+      size
+      uploadedAt
+    }
+  }
+}
+

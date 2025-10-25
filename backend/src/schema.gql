@@ -1,0 +1,356 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AnnualReport {
+  generatedAt: DateTime!
+  id: ID!
+  reportData: JSONObject
+  researchCredits: Float!
+  serviceCredits: Float!
+  teachingCredits: Float!
+  totalCredits: Float!
+  user: User
+  userId: String!
+  year: Int!
+}
+
+type AnnualReportConnection {
+  data: [AnnualReport!]!
+  page: Int!
+  size: Int!
+  total: Int!
+  totalPages: Int!
+}
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+input CreateDepartmentInput {
+  code: String!
+  headUserId: String
+  name: String!
+}
+
+input CreateUserInput {
+  departmentId: String
+  email: String!
+  fullName: String!
+  password: String!
+  role: String!
+}
+
+input CreateWorkInput {
+  abstract: String
+  authors: [WorkAuthorInput!]!
+  doi: String
+  issn: String
+  issue: String
+  journalIndex: String
+  journalName: String
+  language: String! = "mn"
+  pages: String
+  publishedDate: DateTime
+  title: String!
+  type: String!
+  volume: String
+  year: Int!
+}
+
+type Credit {
+  calculatedAt: DateTime!
+  calculationDetail: JSONObject
+  creditValue: Float!
+  id: ID!
+  user: User
+  userId: String!
+  work: Work
+  workId: String!
+}
+
+type CreditBreakdown {
+  byIndex: JSONObject!
+  byType: JSONObject!
+  byYear: JSONObject!
+  credits: [Credit!]!
+  totalCredits: Float!
+}
+
+type CreditConnection {
+  data: [Credit!]!
+  page: Int!
+  size: Int!
+  total: Int!
+  totalPages: Int!
+}
+
+input CreditFilterInput {
+  userId: String
+  year: Int
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Department {
+  code: String!
+  createdAt: DateTime!
+  head: User
+  headUserId: String
+  id: ID!
+  name: String!
+  updatedAt: DateTime!
+  users: [User!]
+}
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject
+
+"""Journal indexing systems"""
+enum JournalIndex {
+  INDEX_MEDICUS
+  LOCAL
+  NONE
+  SCI
+  SCIE
+  SCOPUS
+  SSCI
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  approveWork(input: VerificationInput!): Work!
+  calculateCreditsForWork(workId: String!): [Credit!]!
+  createDepartment(input: CreateDepartmentInput!): Department!
+  createUser(input: CreateUserInput!): User!
+  createWork(input: CreateWorkInput!): Work!
+  deleteAnnualReport(id: String!): AnnualReport!
+  deleteDepartment(id: String!): Department!
+  deleteUser(id: String!): User!
+  deleteWork(id: String!): Work!
+  generateAnnualReport(userId: String!, year: Int!): AnnualReport!
+  generateMyAnnualReport(year: Int!): AnnualReport!
+  login(input: LoginInput!): AuthPayload!
+  me: User!
+  recalculateAllCredits: Boolean!
+  refreshToken(refreshToken: String!): String!
+  register(input: RegisterInput!): AuthPayload!
+  rejectWork(input: VerificationInput!): Work!
+  requestWorkChanges(input: VerificationInput!): Work!
+  submitWorkForVerification(id: String!): Work!
+  updateDepartment(id: String!, input: UpdateDepartmentInput!): Department!
+  updateMyProfile(input: UpdateUserInput!): User!
+  updateUser(id: String!, input: UpdateUserInput!): User!
+  updateWork(id: String!, input: UpdateWorkInput!): Work!
+}
+
+type Query {
+  annualReport(id: String!): AnnualReport!
+  annualReports(filter: ReportFilterInput, page: Float = 1, size: Float = 20): AnnualReportConnection!
+  credit(id: String!): Credit!
+  credits(filter: CreditFilterInput, page: Float = 1, size: Float = 50): CreditConnection!
+  department(id: String!): Department!
+  departments: [Department!]!
+  me: User!
+  myAnnualReport(year: Int!): AnnualReport
+  myCredits(page: Float = 1, size: Float = 50, year: Int): CreditConnection!
+  myCreditsBreakdown(year: Int): CreditBreakdown!
+  myTotalCredits(year: Int): Float!
+  myWorks(page: Float = 1, size: Float = 20): WorkConnection!
+  pendingVerifications(page: Float = 1, size: Float = 20): WorkConnection!
+  searchWorks(input: SearchWorksInput!, page: Float = 1, size: Float = 20): WorkConnection!
+  user(id: String!): User!
+  userAnnualReport(userId: String!, year: Int!): AnnualReport
+  userTotalCredits(userId: String!, year: Int): Float!
+  users(filter: UserFilterInput): [User!]!
+  work(id: String!): Work!
+  works(filter: WorkFilterInput, page: Float = 1, size: Float = 20): WorkConnection!
+}
+
+input RegisterInput {
+  departmentId: String
+  email: String!
+  fullName: String!
+  password: String!
+  role: String!
+}
+
+input ReportFilterInput {
+  userId: String
+  year: Int
+}
+
+"""User roles in the system"""
+enum Role {
+  ADMIN
+  ASSOC_PROF
+  ESH
+  LECTURER
+  PROFESSOR
+  SENIOR_LECTURER
+  STUDENT
+  TRAINEE
+}
+
+input SearchWorksInput {
+  filters: WorkFilterInput
+  query: String!
+}
+
+input UpdateDepartmentInput {
+  code: String
+  headUserId: String
+  name: String
+}
+
+input UpdateUserInput {
+  departmentId: String
+  email: String
+  fullName: String
+  isActive: Boolean
+  role: String
+}
+
+input UpdateWorkInput {
+  abstract: String
+  doi: String
+  issn: String
+  issue: String
+  journalIndex: String
+  journalName: String
+  language: String
+  pages: String
+  publishedDate: DateTime
+  title: String
+  type: String
+  volume: String
+  year: Int
+}
+
+type User {
+  createdAt: DateTime!
+  department: Department
+  departmentId: String
+  email: String!
+  fullName: String!
+  id: ID!
+  isActive: Boolean!
+  lastLogin: DateTime
+  role: Role!
+  updatedAt: DateTime!
+}
+
+input UserFilterInput {
+  departmentId: String
+  role: String
+  search: String
+}
+
+input VerificationInput {
+  note: String
+  workId: String!
+}
+
+type Work {
+  abstract: String
+  authors: [WorkAuthor!]
+  createdAt: DateTime!
+  createdBy: String!
+  creator: User
+  creditBase: Float!
+  doi: String
+  files: [WorkFile!]
+  id: ID!
+  issn: String
+  issue: String
+  journalIndex: JournalIndex
+  journalName: String
+  language: String!
+  pages: String
+  publishedDate: DateTime
+  status: WorkStatus!
+  title: String!
+  type: WorkType!
+  updatedAt: DateTime!
+  volume: String
+  year: Int!
+}
+
+type WorkAuthor {
+  authorName: String!
+  contributionPercent: Float!
+  id: ID!
+  isCorresponding: Boolean!
+  order: Int!
+  user: User
+  userId: String
+  workId: String!
+}
+
+input WorkAuthorInput {
+  authorName: String!
+  contributionPercent: Float!
+  isCorresponding: Boolean!
+  order: Int!
+  userId: String
+}
+
+type WorkConnection {
+  data: [Work!]!
+  page: Int!
+  size: Int!
+  total: Int!
+  totalPages: Int!
+}
+
+type WorkFile {
+  contentType: String!
+  fileKey: String!
+  fileName: String!
+  id: ID!
+  size: Int!
+  uploadedAt: DateTime!
+  uploadedBy: String!
+  uploader: User
+  workId: String!
+}
+
+input WorkFilterInput {
+  createdBy: String
+  journalIndex: String
+  search: String
+  status: String
+  type: String
+  year: Int
+}
+
+"""Work verification status"""
+enum WorkStatus {
+  DRAFT
+  PUBLISHED
+  REJECTED
+  SUBMITTED
+  VERIFIED
+}
+
+"""Types of academic works"""
+enum WorkType {
+  CONFERENCE_PAPER
+  JOURNAL_ARTICLE
+  MONOGRAPH
+  OTHER
+  PATENT
+  TEACHING_MATERIAL
+  THESIS
+}

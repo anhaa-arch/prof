@@ -1,0 +1,262 @@
+// Prisma Schema for University Research & Credit Management System
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextIndex"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum definitions
+enum Role {
+  ADMIN
+  ESH
+  PROFESSOR
+  ASSOC_PROF
+  SENIOR_LECTURER
+  LECTURER
+  TRAINEE
+  STUDENT
+}
+
+enum WorkType {
+  JOURNAL_ARTICLE
+  CONFERENCE_PAPER
+  MONOGRAPH
+  THESIS
+  PATENT
+  TEACHING_MATERIAL
+  OTHER
+}
+
+enum JournalIndex {
+  SCI
+  SSCI
+  SCIE
+  SCOPUS
+  INDEX_MEDICUS
+  LOCAL
+  NONE
+}
+
+enum WorkStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
+  PUBLISHED
+  REJECTED
+}
+
+enum VerificationAction {
+  APPROVE
+  REJECT
+  COMMENT
+  REQUEST_CHANGES
+}
+
+// Models
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         Role     @default(LECTURER)
+  departmentId String?  @map("department_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  lastLogin    DateTime? @map("last_login")
+
+  // Relations
+  department         Department?        @relation(fields: [departmentId], references: [id])
+  worksCreated       Work[]            @relation("WorkCreatedBy")
+  workAuthors        WorkAuthor[]
+  filesUploaded      WorkFile[]
+  verificationsGiven VerificationLog[]
+  credits            Credit[]
+  annualReports      AnnualReport[]
+  auditLogs          AuditLog[]
+  departmentsHeaded  Department[]      @relation("DepartmentHead")
+
+  @@index([email])
+  @@index([departmentId])
+  @@map("users")
+}
+
+model Department {
+  id         String   @id @default(uuid())
+  name       String
+  code       String   @unique
+  headUserId String?  @map("head_user_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  head  User?  @relation("DepartmentHead", fields: [headUserId], references: [id])
+  users User[]
+
+  @@index([headUserId])
+  @@map("departments")
+}
+
+model Work {
+  id            String        @id @default(uuid())
+  title         String        @db.Text
+  abstract      String?       @db.Text
+  language      String        @default("mn") // mn, en, etc.
+  type          WorkType
+  journalName   String?       @map("journal_name")
+  journalIndex  JournalIndex? @map("journal_index")
+  doi           String?
+  issn          String?
+  volume        String?
+  issue         String?
+  pages         String?
+  year          Int
+  publishedDate DateTime?     @map("published_date")
+  status        WorkStatus    @default(DRAFT)
+  creditBase    Decimal       @default(0) @map("credit_base") @db.Decimal(10, 2)
+  createdBy     String        @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  creator          User              @relation("WorkCreatedBy", fields: [createdBy], references: [id])
+  authors          WorkAuthor[]
+  files            WorkFile[]
+  verificationLogs VerificationLog[]
+  credits          Credit[]
+
+  @@index([createdBy])
+  @@index([journalIndex])
+  @@index([year])
+  @@index([status])
+  @@index([type])
+  @@fulltext([title, abstract])
+  @@map("works")
+}
+
+model WorkAuthor {
+  id                   String  @id @default(uuid())
+  workId               String  @map("work_id")
+  userId               String? @map("user_id")
+  authorName           String  @map("author_name")
+  contributionPercent  Decimal @default(0) @map("contribution_percent") @db.Decimal(5, 2) // 0-100
+  order                Int     // Author order (1st, 2nd, etc.)
+  isCorresponding      Boolean @default(false) @map("is_corresponding")
+
+  // Relations
+  work Work  @relation(fields: [workId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([workId])
+  @@index([userId])
+  @@map("work_authors")
+}
+
+model WorkFile {
+  id          String   @id @default(uuid())
+  workId      String   @map("work_id")
+  fileKey     String   @map("file_key") // S3 key/path
+  fileName    String   @map("file_name")
+  contentType String   @map("content_type")
+  size        Int
+  uploadedBy  String   @map("uploaded_by")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  // Relations
+  work     Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploadedBy], references: [id])
+
+  @@index([workId])
+  @@index([uploadedBy])
+  @@map("work_files")
+}
+
+model VerificationLog {
+  id         String             @id @default(uuid())
+  workId     String             @map("work_id")
+  verifiedBy String             @map("verified_by")
+  action     VerificationAction
+  note       String?            @db.Text
+  timestamp  DateTime           @default(now())
+
+  // Relations
+  work     Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+  verifier User @relation(fields: [verifiedBy], references: [id])
+
+  @@index([workId])
+  @@index([verifiedBy])
+  @@map("verification_logs")
+}
+
+model Credit {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  workId             String   @map("work_id")
+  creditValue        Decimal  @map("credit_value") @db.Decimal(10, 2)
+  calculatedAt       DateTime @default(now()) @map("calculated_at")
+  calculationDetail  Json?    @map("calculation_detail") // JSON details of calculation
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  work Work @relation(fields: [workId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workId])
+  @@index([userId])
+  @@index([workId])
+  @@map("credits")
+}
+
+model AnnualReport {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  year             Int
+  totalCredits     Decimal  @map("total_credits") @db.Decimal(10, 2)
+  teachingCredits  Decimal  @default(0) @map("teaching_credits") @db.Decimal(10, 2)
+  researchCredits  Decimal  @default(0) @map("research_credits") @db.Decimal(10, 2)
+  serviceCredits   Decimal  @default(0) @map("service_credits") @db.Decimal(10, 2)
+  generatedAt      DateTime @default(now()) @map("generated_at")
+  reportData       Json?    @map("report_data") // Detailed JSON data
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, year])
+  @@index([userId])
+  @@index([year])
+  @@map("annual_reports")
+}
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  category  String // e.g., "credit_base", "permissions", etc.
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("system_configs")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  action      String
+  targetTable String   @map("target_table")
+  targetId    String   @map("target_id")
+  meta        Json?    // Additional metadata
+  timestamp   DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([targetTable, targetId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
