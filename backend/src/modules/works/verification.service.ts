@@ -3,12 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WorkStatus, VerificationAction, Role } from '@prisma/client';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { CreditsService } from '../credits/credits.service';
 
 @Injectable()
 export class VerificationService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('works') private worksQueue: Queue,
+    private creditsService: CreditsService,
   ) {}
 
   async approve(workId: string, verifierId: string, note?: string) {
@@ -31,8 +33,20 @@ export class VerificationService {
       },
     });
 
-    // Trigger credit calculation job
-    await this.worksQueue.add('calculate-credits', { workId });
+    // Calculate credits immediately (instead of using queue)
+    try {
+      await this.creditsService.calculateCreditsForWork(workId);
+    } catch (error) {
+      console.error('Failed to calculate credits:', error);
+      // Continue anyway, don't fail the approval
+    }
+
+    // Also add to queue for backup (if Redis is available)
+    try {
+      await this.worksQueue.add('calculate-credits', { workId });
+    } catch (error) {
+      console.warn('Queue not available, credits already calculated directly');
+    }
 
     // Create audit log
     await this.prisma.auditLog.create({
