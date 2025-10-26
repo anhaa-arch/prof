@@ -2,20 +2,29 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@apollo/client';
+import { useMutation, useApolloClient } from '@apollo/client';
 import { LOGIN } from '@/graphql/queries';
-import { setAuthTokens, setUser } from '@/lib/auth';
+import { setAuthTokens } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const apolloClient = useApolloClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const [login, { loading }] = useMutation(LOGIN, {
-    onCompleted: (data) => {
+    onCompleted: async (data) => {
+      // Clear Apollo cache before setting new user
+      await apolloClient.clearStore();
+      
+      // Only store tokens, not user data
       setAuthTokens(data.login.accessToken, data.login.refreshToken);
-      setUser(data.login.user);
+      
+      // Clear any old user data from localStorage
+      localStorage.removeItem('user');
+      
+      // Navigate to dashboard
       router.push('/dashboard');
     },
     onError: (error) => {

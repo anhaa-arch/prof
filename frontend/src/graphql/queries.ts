@@ -36,7 +36,7 @@ export const GET_ME = gql`
 `;
 
 export const GET_MY_WORKS = gql`
-  query GetMyWorks($page: Int, $size: Int) {
+  query GetMyWorks($page: Float, $size: Float) {
     myWorks(page: $page, size: $size) {
       data {
         id
@@ -65,7 +65,7 @@ export const GET_MY_WORKS = gql`
 `;
 
 export const GET_WORK = gql`
-  query GetWork($id: ID!) {
+  query GetWork($id: String!) {
     work(id: $id) {
       id
       title
@@ -122,7 +122,7 @@ export const CREATE_WORK = gql`
 `;
 
 export const UPDATE_WORK = gql`
-  mutation UpdateWork($id: ID!, $input: UpdateWorkInput!) {
+  mutation UpdateWork($id: String!, $input: UpdateWorkInput!) {
     updateWork(id: $id, input: $input) {
       id
       title
@@ -132,7 +132,7 @@ export const UPDATE_WORK = gql`
 `;
 
 export const SUBMIT_WORK = gql`
-  mutation SubmitWork($id: ID!) {
+  mutation SubmitWork($id: String!) {
     submitWorkForVerification(id: $id) {
       id
       status
@@ -141,7 +141,7 @@ export const SUBMIT_WORK = gql`
 `;
 
 export const GET_MY_CREDITS = gql`
-  query GetMyCredits($year: Int, $page: Int, $size: Int) {
+  query GetMyCredits($year: Int, $page: Float, $size: Float) {
     myCredits(year: $year, page: $page, size: $size) {
       data {
         id
@@ -189,7 +189,7 @@ export const GET_MY_CREDITS_BREAKDOWN = gql`
 `;
 
 export const GET_PENDING_VERIFICATIONS = gql`
-  query GetPendingVerifications($page: Int, $size: Int) {
+  query GetPendingVerifications($page: Float, $size: Float) {
     pendingVerifications(page: $page, size: $size) {
       data {
         id
@@ -218,8 +218,8 @@ export const GET_PENDING_VERIFICATIONS = gql`
 `;
 
 export const APPROVE_WORK = gql`
-  mutation ApproveWork($workId: ID!, $note: String) {
-    approveWork(input: { workId: $workId, note: $note }) {
+  mutation ApproveWork($input: VerificationInput!) {
+    approveWork(input: $input) {
       id
       status
     }
@@ -227,8 +227,8 @@ export const APPROVE_WORK = gql`
 `;
 
 export const REJECT_WORK = gql`
-  mutation RejectWork($workId: ID!, $note: String) {
-    rejectWork(input: { workId: $workId, note: $note }) {
+  mutation RejectWork($input: VerificationInput!) {
+    rejectWork(input: $input) {
       id
       status
     }
@@ -261,7 +261,7 @@ export const GENERATE_MY_ANNUAL_REPORT = gql`
 `;
 
 export const SEARCH_WORKS = gql`
-  query SearchWorks($query: String!, $page: Int, $size: Int) {
+  query SearchWorks($query: String!, $page: Float, $size: Float) {
     searchWorks(input: { query: $query }, page: $page, size: $size) {
       data {
         id

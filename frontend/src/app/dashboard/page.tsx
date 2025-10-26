@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import { GET_ME, GET_MY_WORKS, GET_MY_TOTAL_CREDITS, GET_MY_CREDITS_BREAKDOWN } from '@/graphql/queries';
-import { getUser, clearAuthTokens, isAuthenticated } from '@/lib/auth';
+import { clearAuthTokens, isAuthenticated } from '@/lib/auth';
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [currentYear] = useState(new Date().getFullYear());
-  const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -19,27 +18,38 @@ export default function DashboardPage() {
       router.push('/login');
       return;
     }
-    setUser(getUser());
   }, [router]);
 
-  const { data: meData } = useQuery(GET_ME);
+  const { data: meData, loading: meLoading } = useQuery(GET_ME, {
+    skip: !mounted,
+  });
   const { data: worksData, loading: worksLoading } = useQuery(GET_MY_WORKS, {
     variables: { page: 1, size: 5 },
+    skip: !mounted,
   });
   const { data: creditsData } = useQuery(GET_MY_TOTAL_CREDITS, {
     variables: { year: currentYear },
+    skip: !mounted,
   });
   const { data: breakdownData } = useQuery(GET_MY_CREDITS_BREAKDOWN, {
     variables: { year: currentYear },
+    skip: !mounted,
   });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     clearAuthTokens();
-    router.push('/login');
+    
+    // Clear Apollo cache
+    const { cache } = await import('@/lib/apollo-wrapper');
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    } else {
+      router.push('/login');
+    }
   };
 
   // Prevent hydration mismatch by showing loading on server-side
-  if (!mounted || !user) {
+  if (!mounted || meLoading || !meData?.me) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -50,7 +60,49 @@ export default function DashboardPage() {
     );
   }
 
+  const user = meData.me;
   const isESH = user.role === 'ESH' || user.role === 'ADMIN';
+
+  // Get dashboard title based on user role
+  const getDashboardTitle = () => {
+    switch (user.role) {
+      case 'ADMIN':
+        return 'Админы хянах самбар';
+      case 'ESH':
+        return 'ЭША хянах самбар';
+      case 'PROFESSOR':
+      case 'ASSOC_PROF':
+      case 'SENIOR_LECTURER':
+      case 'LECTURER':
+        return 'Багшийн хянах самбар';
+      case 'TRAINEE':
+        return 'Дадлагажигчийн хянах самбар';
+      default:
+        return 'Хянах самбар';
+    }
+  };
+
+  // Get welcome message based on user role
+  const getWelcomeMessage = () => {
+    switch (user.role) {
+      case 'ADMIN':
+        return 'Системийн бүх модулиудад хандах эрхтэй';
+      case 'ESH':
+        return 'Бүтээл баталгаажуулах эрхтэй';
+      case 'PROFESSOR':
+        return 'Профессор багш';
+      case 'ASSOC_PROF':
+        return 'Дэд профессор багш';
+      case 'SENIOR_LECTURER':
+        return 'Ахлах багш';
+      case 'LECTURER':
+        return 'Багш';
+      case 'TRAINEE':
+        return 'Дадлагажигч багш';
+      default:
+        return user.role;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -60,10 +112,10 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Хянах самбар
+                {getDashboardTitle()}
               </h1>
               <p className="mt-1 text-sm text-gray-600">
-                {meData?.me?.fullName} ({meData?.me?.role})
+                {user.fullName} · {getWelcomeMessage()}
               </p>
             </div>
             <button
@@ -79,78 +131,135 @@ export default function DashboardPage() {
       {/* Main content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Navigation */}
-        <nav className="mb-8 flex space-x-4">
+        <nav className="mb-8 flex flex-wrap gap-3">
           <Link href="/dashboard" className="btn btn-primary">
-            Хянах самбар
+            🏠 Хянах самбар
           </Link>
-          <Link href="/works" className="btn btn-secondary">
-            Миний бүтээлүүд
-          </Link>
-          <Link href="/credits" className="btn btn-secondary">
-            Кредитүүд
-          </Link>
-          <Link href="/reports" className="btn btn-secondary">
-            Тайлан
-          </Link>
-          {isESH && (
-            <Link href="/verification" className="btn btn-secondary">
-              Баталгаажуулалт
-            </Link>
+          
+          {/* Багш нарын цэс */}
+          {(user.role === 'PROFESSOR' || 
+            user.role === 'ASSOC_PROF' || 
+            user.role === 'SENIOR_LECTURER' || 
+            user.role === 'LECTURER' || 
+            user.role === 'TRAINEE') && (
+            <>
+              <Link href="/works" className="btn btn-secondary">
+                📝 Миний бүтээлүүд
+              </Link>
+              <Link href="/credits" className="btn btn-secondary">
+                ⭐ Миний кредит
+              </Link>
+              <Link href="/reports" className="btn btn-secondary">
+                📊 Миний тайлан
+              </Link>
+            </>
           )}
+          
+          {/* Admin/ESH цэс */}
+          {isESH && (
+            <>
+              <Link href="/verification" className="btn btn-secondary bg-yellow-100 hover:bg-yellow-200 text-yellow-900 border-yellow-300">
+                ✅ Баталгаажуулалт
+              </Link>
+              <Link href="/works" className="btn btn-secondary">
+                📋 Бүх бүтээл
+              </Link>
+              <Link href="/reports" className="btn btn-secondary">
+                📈 Бүх тайлан
+              </Link>
+            </>
+          )}
+          
+          {/* Бүгдэд харагдах */}
           <Link href="/search" className="btn btn-secondary">
-            Хайх
+            🔍 Хайх
           </Link>
         </nav>
 
-        {/* Stats */}
-        <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="card">
-            <h3 className="text-sm font-medium text-gray-500">
-              Нийт бүтээл
-            </h3>
-            <p className="mt-2 text-3xl font-bold text-gray-900">
-              {worksData?.myWorks?.total || 0}
-            </p>
-          </div>
+        {/* Stats - Багш нарын статистик */}
+        {!isESH && (
+          <div className="mb-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="card">
+              <h3 className="text-sm font-medium text-gray-500">
+                Нийт бүтээл
+              </h3>
+              <p className="mt-2 text-3xl font-bold text-gray-900">
+                {worksData?.myWorks?.total || 0}
+              </p>
+            </div>
 
-          <div className="card">
-            <h3 className="text-sm font-medium text-gray-500">
-              {currentYear} оны кредит
-            </h3>
-            <p className="mt-2 text-3xl font-bold text-primary-600">
-              {creditsData?.myTotalCredits?.toFixed(2) || '0.00'}
-            </p>
-          </div>
+            <div className="card">
+              <h3 className="text-sm font-medium text-gray-500">
+                {currentYear} оны кредит
+              </h3>
+              <p className="mt-2 text-3xl font-bold text-primary-600">
+                {creditsData?.myTotalCredits?.toFixed(2) || '0.00'}
+              </p>
+            </div>
 
-          <div className="card">
-            <h3 className="text-sm font-medium text-gray-500">
-              Өндөр импакттай
-            </h3>
-            <p className="mt-2 text-3xl font-bold text-green-600">
-              {((breakdownData?.myCreditsBreakdown?.byIndex?.SCI || 0) +
-                (breakdownData?.myCreditsBreakdown?.byIndex?.SCOPUS || 0)).toFixed(2)}
-            </p>
-          </div>
+            <div className="card">
+              <h3 className="text-sm font-medium text-gray-500">
+                Өндөр импакттай
+              </h3>
+              <p className="mt-2 text-3xl font-bold text-green-600">
+                {((breakdownData?.myCreditsBreakdown?.byIndex?.SCI || 0) +
+                  (breakdownData?.myCreditsBreakdown?.byIndex?.SCOPUS || 0)).toFixed(2)}
+              </p>
+            </div>
 
-          <div className="card">
-            <h3 className="text-sm font-medium text-gray-500">
-              Локал
-            </h3>
-            <p className="mt-2 text-3xl font-bold text-blue-600">
-              {breakdownData?.myCreditsBreakdown?.byIndex?.LOCAL || 0}
-            </p>
+            <div className="card">
+              <h3 className="text-sm font-medium text-gray-500">
+                Локал
+              </h3>
+              <p className="mt-2 text-3xl font-bold text-blue-600">
+                {breakdownData?.myCreditsBreakdown?.byIndex?.LOCAL || 0}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Stats - Admin/ESH статистик */}
+        {isESH && (
+          <div className="mb-8">
+            <div className="card bg-yellow-50 border-yellow-200">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <span className="text-3xl">⚠️</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Баталгаажуулалтын алба
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Та бүтээл баталгаажуулах эрхтэй. "Баталгаажуулалт" хуудас руу орж илгээгдсэн бүтээлүүдийг шалгана уу.
+                  </p>
+                  <div className="mt-3">
+                    <Link 
+                      href="/verification" 
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-900 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    >
+                      Баталгаажуулалт руу очих →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Recent works */}
         <div className="card">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              Сүүлийн бүтээлүүд
+              {isESH ? 'Системийн бүтээлүүд' : 'Миний сүүлийн бүтээлүүд'}
             </h2>
-            <Link href="/works/new" className="btn btn-primary text-sm">
-              + Шинэ бүтээл
-            </Link>
+            {!isESH && (
+              <Link href="/works/new" className="btn btn-primary text-sm">
+                + Шинэ бүтээл
+              </Link>
+            )}
           </div>
 
           {worksLoading ? (

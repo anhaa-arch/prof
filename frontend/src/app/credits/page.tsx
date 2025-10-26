@@ -99,7 +99,14 @@ export default function CreditsPage() {
                             {Number(credit.creditValue).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500">
-                            {credit.calculationDetail || '-'}
+                            {credit.calculationDetail ? (
+                              <div className="space-y-1">
+                                <div>Суурь кр: {credit.calculationDetail.baseCredit}</div>
+                                <div>Оролцоо: {credit.calculationDetail.contributionPercent}%</div>
+                              </div>
+                            ) : (
+                              '-'
+                            )}
                           </td>
                         </tr>
                       ))}
