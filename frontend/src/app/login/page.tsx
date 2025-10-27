@@ -18,11 +18,13 @@ export default function LoginPage() {
       // Clear Apollo cache before setting new user
       await apolloClient.clearStore();
       
-      // Only store tokens, not user data
+      // Store tokens
       setAuthTokens(data.login.accessToken, data.login.refreshToken);
       
-      // Clear any old user data from localStorage
-      localStorage.removeItem('user');
+      // Store user data
+      if (data.login.user && typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(data.login.user));
+      }
       
       // Navigate to dashboard
       router.push('/dashboard');

@@ -203,8 +203,16 @@ enum Role {
   TRAINEE
 }
 
+input SearchFiltersInput {
+  journalIndex: String
+  type: String
+  yearFrom: Int
+  yearTo: Int
+}
+
 input SearchWorksInput {
-  filters: WorkFilterInput
+  authorName: String
+  filters: SearchFiltersInput
   query: String!
 }
 

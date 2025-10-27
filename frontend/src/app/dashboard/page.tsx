@@ -22,6 +22,20 @@ export default function DashboardPage() {
 
   const { data: meData, loading: meLoading } = useQuery(GET_ME, {
     skip: !mounted,
+    onCompleted: (data) => {
+      // Store user data in localStorage
+      if (data?.me && typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(data.me));
+      }
+    },
+    onError: (error) => {
+      console.error('GET_ME error:', error);
+      // If unauthorized, redirect to login
+      if (error.message.includes('Unauthorized')) {
+        clearAuthTokens();
+        router.push('/login');
+      }
+    },
   });
   const { data: worksData, loading: worksLoading } = useQuery(GET_MY_WORKS, {
     variables: { page: 1, size: 5 },
