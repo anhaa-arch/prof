@@ -2,16 +2,29 @@
 
 import { useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { SEARCH_WORKS } from '@/graphql/queries';
+import { SEARCH_WORKS_ADVANCED } from '@/graphql/queries';
 import Link from 'next/link';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [authorName, setAuthorName] = useState('');
+  const [workType, setWorkType] = useState('');
+  const [journalIndex, setJournalIndex] = useState('');
+  const [yearFrom, setYearFrom] = useState('');
+  const [yearTo, setYearTo] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const { data, loading } = useQuery(SEARCH_WORKS, {
+  const { data, loading } = useQuery(SEARCH_WORKS_ADVANCED, {
     variables: {
       query: searchQuery,
+      authorName: authorName || undefined,
+      filters: {
+        type: workType || undefined,
+        journalIndex: journalIndex || undefined,
+        yearFrom: yearFrom ? parseInt(yearFrom) : undefined,
+        yearTo: yearTo ? parseInt(yearTo) : undefined,
+      },
       page: 1,
       size: 20,
     },
@@ -54,12 +67,119 @@ export default function SearchPage() {
                   onChange={(e) => setQuery(e.target.value)}
                   className="input flex-1"
                   placeholder="Гарчиг, хураангуй, сэтгүүлийн нэр, DOI..."
+                  required
                 />
                 <button type="submit" className="btn btn-primary">
                   Хайх
                 </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                * Гарчиг, хураангуй, сэтгүүлийн нэр, DOI-гоор хайна
+              </p>
             </div>
+
+            {/* Advanced search toggle */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-sm text-primary-600 hover:text-primary-800"
+              >
+                {showAdvanced ? '▼ Нарийвчилсан хайлт хаах' : '▶ Нарийвчилсан хайлт нээх'}
+              </button>
+            </div>
+
+            {/* Advanced search fields */}
+            {showAdvanced && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <label htmlFor="authorName" className="block text-sm font-medium text-gray-700">
+                    Зохиогчийн нэр
+                  </label>
+                  <input
+                    type="text"
+                    id="authorName"
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    className="input mt-1"
+                    placeholder="Зохиогчийн нэрээр хайх"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="workType" className="block text-sm font-medium text-gray-700">
+                    Төрөл
+                  </label>
+                  <select
+                    id="workType"
+                    value={workType}
+                    onChange={(e) => setWorkType(e.target.value)}
+                    className="input mt-1"
+                  >
+                    <option value="">Бүгд</option>
+                    <option value="ARTICLE">Өгүүлэл</option>
+                    <option value="BOOK">Ном</option>
+                    <option value="CONFERENCE">Хурлын эмхэтгэл</option>
+                    <option value="THESIS">Диссертаци</option>
+                    <option value="OTHER">Бусад</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="journalIndex" className="block text-sm font-medium text-gray-700">
+                    Сэтгүүлийн индекс
+                  </label>
+                  <select
+                    id="journalIndex"
+                    value={journalIndex}
+                    onChange={(e) => setJournalIndex(e.target.value)}
+                    className="input mt-1"
+                  >
+                    <option value="">Бүгд</option>
+                    <option value="SCI">SCI</option>
+                    <option value="SCIE">SCIE</option>
+                    <option value="SSCI">SSCI</option>
+                    <option value="SCOPUS">SCOPUS</option>
+                    <option value="INDEX_MEDICUS">INDEX_MEDICUS</option>
+                    <option value="LOCAL">LOCAL</option>
+                    <option value="NONE">NONE</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="yearFrom" className="block text-sm font-medium text-gray-700">
+                      Он (эхлэх)
+                    </label>
+                    <input
+                      type="number"
+                      id="yearFrom"
+                      value={yearFrom}
+                      onChange={(e) => setYearFrom(e.target.value)}
+                      className="input mt-1"
+                      placeholder="2020"
+                      min="1900"
+                      max="2100"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="yearTo" className="block text-sm font-medium text-gray-700">
+                      Он (дуусах)
+                    </label>
+                    <input
+                      type="number"
+                      id="yearTo"
+                      value={yearTo}
+                      onChange={(e) => setYearTo(e.target.value)}
+                      className="input mt-1"
+                      placeholder="2024"
+                      min="1900"
+                      max="2100"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </form>
         </div>
 

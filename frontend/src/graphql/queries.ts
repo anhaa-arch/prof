@@ -49,6 +49,10 @@ export const GET_MY_WORKS = gql`
         status
         creditBase
         createdAt
+        creator {
+          id
+          fullName
+        }
         authors {
           id
           authorName
@@ -263,6 +267,37 @@ export const GENERATE_MY_ANNUAL_REPORT = gql`
 export const SEARCH_WORKS = gql`
   query SearchWorks($query: String!, $page: Float, $size: Float) {
     searchWorks(input: { query: $query }, page: $page, size: $size) {
+      data {
+        id
+        title
+        abstract
+        type
+        journalName
+        journalIndex
+        year
+        authors {
+          authorName
+        }
+      }
+      total
+      totalPages
+    }
+  }
+`;
+
+export const SEARCH_WORKS_ADVANCED = gql`
+  query SearchWorksAdvanced(
+    $query: String!
+    $authorName: String
+    $filters: SearchFiltersInput
+    $page: Float
+    $size: Float
+  ) {
+    searchWorks(
+      input: { query: $query, authorName: $authorName, filters: $filters }
+      page: $page
+      size: $size
+    ) {
       data {
         id
         title

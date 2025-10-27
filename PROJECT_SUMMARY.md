@@ -1,4 +1,4 @@
-# University Research & Credit Management System - Project Summary
+ # University Research & Credit Management System - Project Summary
 
 ## Төслийн тойм
 

@@ -215,17 +215,45 @@ export class WorkFilterInput {
 }
 
 @InputType()
+export class SearchFiltersInput {
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsEnum(WorkType)
+  type?: WorkType;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsEnum(JournalIndex)
+  journalIndex?: JournalIndex;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  yearFrom?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  yearTo?: number;
+}
+
+@InputType()
 export class SearchWorksInput {
   @Field()
   @IsNotEmpty()
   @IsString()
   query: string;
 
-  @Field(() => WorkFilterInput, { nullable: true })
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  authorName?: string;
+
+  @Field(() => SearchFiltersInput, { nullable: true })
   @IsOptional()
   @ValidateNested()
-  @Type(() => WorkFilterInput)
-  filters?: WorkFilterInput;
+  @Type(() => SearchFiltersInput)
+  filters?: SearchFiltersInput;
 }
 
 @InputType()

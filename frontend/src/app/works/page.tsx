@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@apollo/client';
-import { GET_MY_WORKS } from '@/graphql/queries';
-import { isAuthenticated } from '@/lib/auth';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_MY_WORKS, APPROVE_WORK, REJECT_WORK, SUBMIT_WORK } from '@/graphql/queries';
+import { isAuthenticated, hasRole, getCurrentUser } from '@/lib/auth';
+import { useToast } from '@/components/ToastContainer';
 import Link from 'next/link';
 
 export default function WorksPage() {
@@ -12,6 +13,7 @@ export default function WorksPage() {
   const [mounted, setMounted] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -24,6 +26,75 @@ export default function WorksPage() {
     variables: { page, size: pageSize },
     skip: !mounted,
   });
+
+  const [submitWork] = useMutation(SUBMIT_WORK, {
+    onCompleted: () => {
+      showSuccess('✅ Бүтээл баталгаажуулалтад амжилттай илгээгдлээ!');
+      refetch();
+    },
+    onError: (error) => {
+      showError('❌ Алдаа: ' + error.message);
+    },
+  });
+
+  const [approveWork] = useMutation(APPROVE_WORK, {
+    onCompleted: () => {
+      showSuccess('✅ Бүтээл амжилттай баталгаажлаа!');
+      refetch();
+    },
+    onError: (error) => {
+      showError('❌ Алдаа: ' + error.message);
+    },
+  });
+
+  const [rejectWork] = useMutation(REJECT_WORK, {
+    onCompleted: () => {
+      showSuccess('Бүтээл татгалзагдлаа');
+      refetch();
+    },
+    onError: (error) => {
+      showError('❌ Алдаа: ' + error.message);
+    },
+  });
+
+  const handleSubmit = (workId: string) => {
+    if (confirm('Энэ бүтээлийг баталгаажуулалтад илгээх үү?')) {
+      submitWork({ variables: { id: workId } });
+    }
+  };
+
+  const handleApprove = (workId: string) => {
+    if (confirm('Энэ бүтээлийг баталгаажуулах уу?')) {
+      const note = prompt('Тэмдэглэл (заавал биш):');
+      approveWork({
+        variables: {
+          input: {
+            workId,
+            note,
+          },
+        },
+      });
+    }
+  };
+
+  const handleReject = (workId: string) => {
+    if (confirm('Энэ бүтээлийг татгалзах уу?')) {
+      const note = prompt('Татгалзсан шалтгаан:');
+      if (note) {
+        rejectWork({
+          variables: {
+            input: {
+              workId,
+              note,
+            },
+          },
+        });
+      }
+    }
+  };
+
+  const currentUser = getCurrentUser();
+  const isAdminOrESH = hasRole(['ADMIN', 'ESH']);
 
   if (!mounted) {
     return (
@@ -158,12 +229,38 @@ export default function WorksPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500">
-                            <Link
-                              href={`/works/${work.id}`}
-                              className="text-primary-600 hover:text-primary-900"
-                            >
-                              Дэлгэрэнгүй
-                            </Link>
+                            <div className="flex space-x-2">
+                              <Link
+                                href={`/works/${work.id}`}
+                                className="text-primary-600 hover:text-primary-900"
+                              >
+                                Дэлгэрэнгүй
+                              </Link>
+                              {work.status === 'DRAFT' && work.creator?.id === currentUser?.id && (
+                                <button
+                                  onClick={() => handleSubmit(work.id)}
+                                  className="text-blue-600 hover:text-blue-900"
+                                >
+                                  Илгээх
+                                </button>
+                              )}
+                              {work.status === 'SUBMITTED' && isAdminOrESH && (
+                                <>
+                                  <button
+                                    onClick={() => handleApprove(work.id)}
+                                    className="text-green-600 hover:text-green-900"
+                                  >
+                                    Батлах
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(work.id)}
+                                    className="text-red-600 hover:text-red-900"
+                                  >
+                                    Татгалзах
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}

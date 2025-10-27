@@ -272,7 +272,7 @@ export class WorksService {
     });
   }
 
-  async search(query: string, filters?: any, page = 1, size = 20) {
+  async search(query: string, authorName?: string, filters?: any, page = 1, size = 20) {
     const where: Prisma.WorkWhereInput = {
       AND: [
         {
@@ -285,6 +285,15 @@ export class WorksService {
         },
       ],
     };
+
+    // Author name search
+    if (authorName) {
+      where.authors = {
+        some: {
+          authorName: { contains: authorName },
+        },
+      };
+    }
 
     if (filters?.journalIndex) {
       where.journalIndex = filters.journalIndex;

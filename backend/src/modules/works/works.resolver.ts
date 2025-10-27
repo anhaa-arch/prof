@@ -57,7 +57,7 @@ export class WorksResolver {
     @Args('page', { nullable: true, defaultValue: 1 }) page?: number,
     @Args('size', { nullable: true, defaultValue: 20 }) size?: number,
   ): Promise<any> {
-    return this.worksService.search(input.query, input.filters, page, size);
+    return this.worksService.search(input.query, input.authorName, input.filters, page, size);
   }
 
   @Query(() => WorkConnection)

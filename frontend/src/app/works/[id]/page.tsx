@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_WORK, SUBMIT_WORK, UPDATE_WORK } from '@/graphql/queries';
 import { isAuthenticated } from '@/lib/auth';
+import { useToast } from '@/components/ToastContainer';
 import Link from 'next/link';
 
 export default function WorkDetailPage({ params }: { params: { id: string } }) {
@@ -12,6 +13,9 @@ export default function WorkDetailPage({ params }: { params: { id: string } }) {
   const [mounted, setMounted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const { showSuccess, showError, showWarning } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -27,22 +31,22 @@ export default function WorkDetailPage({ params }: { params: { id: string } }) {
 
   const [submitWork, { loading: submitting }] = useMutation(SUBMIT_WORK, {
     onCompleted: () => {
-      alert('Бүтээл амжилттай илгээгдлээ!');
+      showSuccess('✅ Бүтээл баталгаажуулалтад амжилттай илгээгдлээ!');
       refetch();
     },
     onError: (error) => {
-      alert('Алдаа гарлаа: ' + error.message);
+      showError('❌ Алдаа гарлаа: ' + error.message);
     },
   });
 
   const [updateWork, { loading: updating }] = useMutation(UPDATE_WORK, {
     onCompleted: () => {
-      alert('Бүтээл амжилттай шинэчлэгдлээ!');
+      showSuccess('✅ Бүтээл амжилттай шинэчлэгдлээ!');
       setIsEditing(false);
       refetch();
     },
     onError: (error) => {
-      alert('Алдаа гарлаа: ' + error.message);
+      showError('❌ Алдаа гарлаа: ' + error.message);
     },
   });
 
@@ -133,6 +137,88 @@ export default function WorkDetailPage({ params }: { params: { id: string } }) {
       publishedDate: work.publishedDate,
     });
     setIsEditing(true);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/files/upload/${params.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Файл upload хийхэд алдаа гарлаа');
+      }
+
+      showSuccess('✅ Файл амжилттай хуулагдлаа!');
+      refetch();
+    } catch (error: any) {
+      setUploadError(error.message);
+      showError('❌ Алдаа: ' + error.message);
+    } finally {
+      setUploading(false);
+      event.target.value = ''; // Reset file input
+    }
+  };
+
+  const handleFileDownload = async (fileId: string, fileName: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/files/${fileId}/url`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Файл татахад алдаа гарлаа');
+      }
+
+      const { url } = await response.json();
+      
+      // Open download URL in new tab
+      window.open(url, '_blank');
+      showSuccess('📥 Файл татагдаж байна...');
+    } catch (error: any) {
+      showError('❌ Алдаа: ' + error.message);
+    }
+  };
+
+  const handleFileDelete = async (fileId: string) => {
+    if (!confirm('Энэ файлыг устгах уу?')) return;
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Файл устгахад алдаа гарлаа');
+      }
+
+      showSuccess('✅ Файл амжилттай устгагдлаа!');
+      refetch();
+    } catch (error: any) {
+      showError('❌ Алдаа: ' + error.message);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -517,29 +603,70 @@ export default function WorkDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Files */}
-          {work.files && work.files.length > 0 && (
-            <div className="card">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Файлууд</h2>
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Файлууд ({work.files?.length || 0})
+              </h2>
+              <div>
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                />
+                <label
+                  htmlFor="file-upload"
+                  className={`btn btn-primary cursor-pointer ${uploading ? 'opacity-50' : ''}`}
+                >
+                  {uploading ? '📤 Хуулж байна...' : '📎 Файл хавсаргах'}
+                </label>
+              </div>
+            </div>
+
+            {uploadError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                ⚠️ {uploadError}
+              </div>
+            )}
+
+            {work.files && work.files.length > 0 ? (
               <div className="space-y-2">
                 {work.files.map((file: any) => (
                   <div
                     key={file.id}
-                    className="flex items-center justify-between border-b pb-2"
+                    className="flex items-center justify-between border-b pb-3 hover:bg-gray-50 px-2 rounded"
                   >
-                    <div>
-                      <p className="font-medium text-gray-900">{file.fileName}</p>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">📄 {file.fileName}</p>
                       <p className="text-sm text-gray-500">
-                        {(file.size / 1024).toFixed(2)} KB
+                        {(file.size / 1024).toFixed(2)} KB • {new Date(file.uploadedAt).toLocaleDateString('mn-MN')}
                       </p>
                     </div>
-                    <span className="text-sm text-gray-600">
-                      {new Date(file.uploadedAt).toLocaleDateString('mn-MN')}
-                    </span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleFileDownload(file.id, file.fileName)}
+                        className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                      >
+                        Татах
+                      </button>
+                      <button
+                        onClick={() => handleFileDelete(file.id)}
+                        className="text-red-600 hover:text-red-900 text-sm font-medium"
+                      >
+                        Устгах
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-center py-8 text-gray-500">
+                Файл хавсаргаагүй байна. Дээрх товчлуураар файл нэмнэ үү.
+              </p>
+            )}
+          </div>
 
           {/* Metadata */}
           <div className="card">
