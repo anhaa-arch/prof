@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_PENDING_VERIFICATIONS, APPROVE_WORK, REJECT_WORK } from '@/graphql/queries';
 import { isAuthenticated, hasRole } from '@/lib/auth';
-import { useToast } from '@/components/ToastContainer';
 import Link from 'next/link';
 
 export default function VerificationPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -26,21 +24,21 @@ export default function VerificationPage() {
 
   const [approveWork] = useMutation(APPROVE_WORK, {
     onCompleted: () => {
-      showSuccess('✅ Бүтээл амжилттай баталгаажлаа!');
+      alert('Амжилттай батлагдлаа');
       refetch();
     },
     onError: (error) => {
-      showError('❌ Алдаа: ' + error.message);
+      alert('Алдаа: ' + error.message);
     },
   });
 
   const [rejectWork] = useMutation(REJECT_WORK, {
     onCompleted: () => {
-      showSuccess('Бүтээл татгалзагдлаа');
+      alert('Татгалзлаа');
       refetch();
     },
     onError: (error) => {
-      showError('❌ Алдаа: ' + error.message);
+      alert('Алдаа: ' + error.message);
     },
   });
 

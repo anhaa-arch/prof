@@ -170,6 +170,7 @@ type Query {
   myWorks(page: Float = 1, size: Float = 20): WorkConnection!
   pendingVerifications(page: Float = 1, size: Float = 20): WorkConnection!
   searchWorks(input: SearchWorksInput!, page: Float = 1, size: Float = 20): WorkConnection!
+  searchWorksAdvanced(authorName: String, filters: WorkFilterInput, page: Float = 1, size: Float = 20, query: String): WorkConnection!
   user(id: String!): User!
   userAnnualReport(userId: String!, year: Int!): AnnualReport
   userTotalCredits(userId: String!, year: Int): Float!
@@ -203,16 +204,8 @@ enum Role {
   TRAINEE
 }
 
-input SearchFiltersInput {
-  journalIndex: String
-  type: String
-  yearFrom: Int
-  yearTo: Int
-}
-
 input SearchWorksInput {
-  authorName: String
-  filters: SearchFiltersInput
+  filters: WorkFilterInput
   query: String!
 }
 

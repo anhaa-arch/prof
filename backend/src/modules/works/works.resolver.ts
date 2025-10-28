@@ -57,7 +57,30 @@ export class WorksResolver {
     @Args('page', { nullable: true, defaultValue: 1 }) page?: number,
     @Args('size', { nullable: true, defaultValue: 20 }) size?: number,
   ): Promise<any> {
-    return this.worksService.search(input.query, input.authorName, input.filters, page, size);
+    return this.worksService.search({
+      query: input.query,
+      filters: input.filters,
+      page,
+      size,
+    });
+  }
+
+  @Query(() => WorkConnection)
+  @UseGuards(GqlAuthGuard)
+  async searchWorksAdvanced(
+    @Args('query', { nullable: true }) query?: string,
+    @Args('authorName', { nullable: true }) authorName?: string,
+    @Args('filters', { nullable: true }) filters?: WorkFilterInput,
+    @Args('page', { nullable: true, defaultValue: 1 }) page: number = 1,
+    @Args('size', { nullable: true, defaultValue: 20 }) size: number = 20,
+  ): Promise<any> {
+    return this.worksService.search({
+      query,
+      filters,
+      authorName,
+      page,
+      size,
+    });
   }
 
   @Query(() => WorkConnection)
@@ -134,4 +157,3 @@ export class WorksResolver {
     return this.verificationService.requestChanges(input.workId, user.id, input.note!);
   }
 }
-

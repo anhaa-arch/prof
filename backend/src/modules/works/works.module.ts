@@ -16,4 +16,3 @@ import { CreditsModule } from '../credits/credits.module';
   exports: [WorksService, VerificationService],
 })
 export class WorksModule {}
-

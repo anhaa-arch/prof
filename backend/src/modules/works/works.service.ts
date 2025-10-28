@@ -272,41 +272,104 @@ export class WorksService {
     });
   }
 
-  async search(query: string, authorName?: string, filters?: any, page = 1, size = 20) {
-    const where: Prisma.WorkWhereInput = {
-      AND: [
-        {
+  async search(options: {
+    query?: string;
+    filters?: any;
+    authorName?: string;
+    page?: number;
+    size?: number;
+  }) {
+    const {
+      query,
+      filters,
+      authorName,
+      page = 1,
+      size = 20,
+    } = options;
+
+    const where: Prisma.WorkWhereInput = {};
+    const andConditions: Prisma.WorkWhereInput[] = [];
+
+    const normalizedQuery = query?.trim();
+    if (normalizedQuery) {
+      andConditions.push({
+        OR: [
+          { title: { contains: normalizedQuery, mode: 'insensitive' } },
+          { abstract: { contains: normalizedQuery, mode: 'insensitive' } },
+          { journalName: { contains: normalizedQuery, mode: 'insensitive' } },
+          { doi: { contains: normalizedQuery, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    const normalizedAuthor = authorName?.trim();
+    if (normalizedAuthor) {
+      andConditions.push({
+        authors: {
+          some: {
+            authorName: { contains: normalizedAuthor, mode: 'insensitive' },
+          },
+        },
+      });
+    }
+
+    if (filters) {
+      if (filters.status) {
+        andConditions.push({
+          status: filters.status,
+        });
+      }
+
+      if (filters.type) {
+        andConditions.push({
+          type: filters.type,
+        });
+      }
+
+      if (filters.journalIndex) {
+        andConditions.push({
+          journalIndex: filters.journalIndex,
+        });
+      }
+
+      if (filters.createdBy) {
+        andConditions.push({
+          createdBy: filters.createdBy,
+        });
+      }
+
+      if (filters.year) {
+        andConditions.push({
+          year: filters.year,
+        });
+      } else if (filters.yearFrom || filters.yearTo) {
+        const yearFilter: Prisma.IntFilter = {};
+        if (filters.yearFrom) {
+          yearFilter.gte = filters.yearFrom;
+        }
+        if (filters.yearTo) {
+          yearFilter.lte = filters.yearTo;
+        }
+        andConditions.push({
+          year: yearFilter,
+        });
+      }
+
+      const filterSearch = filters.search?.trim();
+      if (filterSearch) {
+        andConditions.push({
           OR: [
-            { title: { contains: query } },
-            { abstract: { contains: query } },
-            { journalName: { contains: query } },
-            { doi: { contains: query } },
+            { title: { contains: filterSearch, mode: 'insensitive' } },
+            { abstract: { contains: filterSearch, mode: 'insensitive' } },
+            { journalName: { contains: filterSearch, mode: 'insensitive' } },
+            { doi: { contains: filterSearch, mode: 'insensitive' } },
           ],
-        },
-      ],
-    };
-
-    // Author name search
-    if (authorName) {
-      where.authors = {
-        some: {
-          authorName: { contains: authorName },
-        },
-      };
+        });
+      }
     }
 
-    if (filters?.journalIndex) {
-      where.journalIndex = filters.journalIndex;
-    }
-
-    if (filters?.type) {
-      where.type = filters.type;
-    }
-
-    if (filters?.yearFrom || filters?.yearTo) {
-      where.year = {};
-      if (filters.yearFrom) where.year.gte = filters.yearFrom;
-      if (filters.yearTo) where.year.lte = filters.yearTo;
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const skip = (page - 1) * size;
@@ -364,4 +427,3 @@ export class WorksService {
     return defaults[journalIndex] || 2;
   }
 }
-

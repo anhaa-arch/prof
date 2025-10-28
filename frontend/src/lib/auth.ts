@@ -56,10 +56,6 @@ export function isAuthenticated(): boolean {
   return !!getAccessToken();
 }
 
-export function getCurrentUser(): User | null {
-  return getUser();
-}
-
 export function hasRole(requiredRole: string | string[]): boolean {
   const user = getUser();
   if (!user) return false;

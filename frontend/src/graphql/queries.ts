@@ -49,10 +49,6 @@ export const GET_MY_WORKS = gql`
         status
         creditBase
         createdAt
-        creator {
-          id
-          fullName
-        }
         authors {
           id
           authorName
@@ -287,14 +283,16 @@ export const SEARCH_WORKS = gql`
 
 export const SEARCH_WORKS_ADVANCED = gql`
   query SearchWorksAdvanced(
-    $query: String!
+    $query: String
     $authorName: String
-    $filters: SearchFiltersInput
+    $filters: WorkFilterInput
     $page: Float
     $size: Float
   ) {
-    searchWorks(
-      input: { query: $query, authorName: $authorName, filters: $filters }
+    searchWorksAdvanced(
+      query: $query
+      authorName: $authorName
+      filters: $filters
       page: $page
       size: $size
     ) {
@@ -306,13 +304,16 @@ export const SEARCH_WORKS_ADVANCED = gql`
         journalName
         journalIndex
         year
+        status
         authors {
           authorName
+          contributionPercent
         }
       }
       total
+      page
+      size
       totalPages
     }
   }
 `;
-
